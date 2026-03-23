@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLBB CLI — Web Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070b12;
+  --panel: #0d1420;
+  --border: #1a2a3a;
+  --accent: #00d4ff;
+  --gold: #f0a500;
+  --red: #ff3c5a;
+  --green: #00ff99;
+  --muted: #4a6275;
+  --text: #c8dce8;
+  --sp: #bf60ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* BG grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: relative;
+  z-index: 10;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(7,11,18,.9);
+  backdrop-filter: blur(8px);
+}
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(0,212,255,.5);
+}
+.logo span { color: var(--gold); }
+.patch-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .7rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.stats-bar {
+  margin-left: auto;
+  display: flex;
+  gap: 18px;
+  font-size: .85rem;
+  color: var(--muted);
+}
+.stats-bar b { color: var(--accent); }
+
+/* ── NAV TABS ── */
+nav {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 2px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,11,18,.7);
+  overflow-x: auto;
+}
+nav button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 12px 18px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all .2s;
+  text-transform: uppercase;
+}
+nav button:hover { color: var(--text); }
+nav button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── MAIN CONTENT ── */
+main {
+  position: relative;
+  z-index: 1;
+  padding: 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── SEARCH / FILTER BAR ── */
+.search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+input[type="text"], select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .9rem;
+  padding: 9px 14px;
+  border-radius: 4px;
+  outline: none;
+  transition: border .2s;
+}
+input[type="text"] { flex: 1; min-width: 200px; }
+input[type="text"]:focus, select:focus { border-color: var(--accent); }
+select { cursor: pointer; }
+select option { background: var(--panel); }
+
+/* ── HERO GRID ── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+.hero-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border .2s, transform .15s;
+  text-align: center;
+}
+.hero-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.hero-card.selected { border-color: var(--gold); }
+.hero-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  background: #0a1520;
+}
+.hero-card .hname {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 5px 3px;
+  letter-spacing: .5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.hero-card .hrole {
+  font-size: .6rem;
+  color: var(--muted);
+  padding-bottom: 5px;
+}
+
+/* ── DETAIL PANEL ── */
+.detail-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 22px;
+  margin-top: 18px;
+  display: none;
+}
+.detail-panel.show { display: block; animation: fadeIn .2s ease; }
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.detail-header img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+}
+.detail-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+.detail-header .meta {
+  font-size: .85rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: .75rem;
+  font-weight: 600;
+  margin: 2px;
+  letter-spacing: .5px;
+}
+.tag.role { background: rgba(0,212,255,.12); color: var(--accent); border: 1px solid rgba(0,212,255,.2); }
+.tag.lane { background: rgba(240,165,0,.12); color: var(--gold); border: 1px solid rgba(240,165,0,.2); }
+
+.section-title {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 0 8px;
+}
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag.counter { background: rgba(0,255,153,.1); color: var(--green); border: 1px solid rgba(0,255,153,.2); }
+.tag.weak { background: rgba(255,60,90,.1); color: var(--red); border: 1px solid rgba(255,60,90,.2); }
+
+/* ── BUILD ── */
+.build-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.item-card {
+  background: #0a1520;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  cursor: pointer;
+  transition: border .2s;
+}
+.item-card:hover { border-color: var(--gold); }
+.item-card img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #0d1420;
+}
+.item-card .iname { font-size: .8rem; font-weight: 600; color: var(--gold); }
+.item-card .istat { font-size: .65rem; color: var(--muted); }
+
+.tip-box {
+  background: rgba(0,212,255,.05);
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  border-radius: 0 4px 4px 0;
+  font-size: .9rem;
+  line-height: 1.5;
+  margin-top: 8px;
+  color: var(--text);
+}
+
+/* ── TIER LIST ── */
+.tier-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.tier-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  width: 44px;
+  flex-shrink: 0;
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 4px;
+}
+.tier-label.sp { background: rgba(191,96,255,.2); color: var(--sp); border: 1px solid rgba(191,96,255,.3); }
+.tier-label.s  { background: rgba(240,165,0,.2);  color: var(--gold); border: 1px solid rgba(240,165,0,.3); }
+.tier-label.a  { background: rgba(0,255,153,.15); color: var(--green); border: 1px solid rgba(0,255,153,.25); }
+.tier-label.b  { background: rgba(0,212,255,.12); color: var(--accent); border: 1px solid rgba(0,212,255,.2); }
+.tier-heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.tier-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px 4px 4px;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border .2s;
+}
+.tier-chip:hover { border-color: var(--accent); }
+.tier-chip img { width: 26px; height: 26px; object-fit: cover; border-radius: 3px; background: #0a1520; }
+
+/* ── ITEMS GRID ── */
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.item-full-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  cursor: pointer;
+  transition: border .2s;
+}
+.item-full-card:hover { border-color: var(--gold); }
+.item-full-card.selected { border-color: var(--gold); background: rgba(240,165,0,.05); }
+.item-full-card img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #0a1520; }
+.item-full-card .info .iname { font-size: .85rem; font-weight: 700; color: var(--gold); }
+.item-full-card .info .itype { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.item-full-card .info .istat { font-size: .72rem; color: var(--accent); margin-top: 2px; }
+
+.item-detail {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+  margin-top: 16px;
+  display: none;
+}
+.item-detail.show { display: block; animation: fadeIn .2s ease; }
+
+/* ── DRAFT HELPER ── */
+.draft-area {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media(max-width:700px){ .draft-area { grid-template-columns: 1fr; } }
+.draft-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+}
+.draft-panel h3 {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.enemy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,60,90,.1);
+  border: 1px solid rgba(255,60,90,.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: .78rem;
+  margin: 3px;
+  color: var(--red);
+}
+.enemy-chip button {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: .8rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+.suggest-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,255,153,.07);
+  border: 1px solid rgba(0,255,153,.15);
+  border-radius: 4px;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border .2s;
+}
+.suggest-chip:hover { border-color: var(--green); }
+.suggest-chip img { width: 28px; height: 28px; object-fit: cover; border-radius: 3px; background: #0a1520; }
+.suggest-chip .sname { font-size: .85rem; font-weight: 600; color: var(--green); }
+.suggest-chip .smeta { font-size: .7rem; color: var(--muted); }
+.score-bar {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+}
+.score-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.score-dot.off { background: var(--border); }
+
+/* ── MISC ── */
+.btn {
+  background: rgba(0,212,255,.1);
+  border: 1px solid rgba(0,212,255,.3);
+  color: var(--accent);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 8px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+}
+.btn:hover { background: rgba(0,212,255,.2); }
+.btn.danger { border-color: rgba(255,60,90,.3); color: var(--red); background: rgba(255,60,90,.07); }
+.btn.danger:hover { background: rgba(255,60,90,.15); }
+
+.role-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.role-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.role-btn:hover, .role-btn.active { border-color: var(--accent); color: var(--accent); }
+
+.count-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .75rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MLBB<span>.</span>CLI</div>
+  <div class="patch-badge">PATCH 2.1.50+ · MARCH 2026</div>
+  <div class="stats-bar">
+    <span><b id="heroCount">0</b> Heroes</span>
+    <span><b id="itemCount">0</b> Items</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('heroes')">Hero Browser</button>
+  <button onclick="switchTab('counters')">Counter Lookup</button>
+  <button onclick="switchTab('items')">Item Lookup</button>
+  <button onclick="switchTab('draft')">Draft Helper</button>
+  <button onclick="switchTab('tier')">Tier List</button>
+</nav>
+
+<main>
+
+<!-- ══ HERO BROWSER ══ -->
+<div id="tab-heroes" class="tab-content active">
+  <div class="search-row">
+    <input type="text" id="heroSearch" placeholder="Search hero..." oninput="filterHeroes()">
+    <select id="roleFilter" onchange="filterHeroes()">
+      <option value="">All Roles</option>
+      <option>Assassin</option><option>Fighter</option><option>Tank</option>
+      <option>Mage</option><option>Marksman</option><option>Support</option>
+    </select>
+    <select id="laneFilter" onchange="filterHeroes()">
+      <option value="">All Lanes</option>
+      <option>Jungle</option><option>EXP</option><option>Gold</option>
+      <option>Mid</option><option>Roam</option>
+    </select>
+  </div>
+  <div class="count-badge" id="heroCountLabel"></div>
+  <div class="hero-grid" id="heroGrid"></div>
+  <div class="detail-panel" id="heroDetail"></div>
+</div>
+
+<!-- ══ COUNTER LOOKUP ══ -->
+<div id="tab-counters" class="tab-content">
+  <div class="search-row">
+    <input type="text" id="counterSearch" placeholder="Search hero to find counters..." oninput="filterCounterHeroes()">
+    <select id="counterRole" onchange="filterCounterHeroes()">
+      <option value="">All Roles</option>
+      <option>Assassin</option><option>Fighter</option><option>Tank</option>
+      <option>Mage</option><option>Marksman</option><option>Support</option>
+    </select>
+  </div>
+  <div class="count-badge" id="counterCountLabel"></div>
+  <div class="hero-grid" id="counterGrid"></div>
+  <div class="detail-panel" id="counterDetail"></div>
+</div>
+
+<!-- ══ ITEM LOOKUP ══ -->
+<div id="tab-items" class="tab-content">
+  <div class="search-row">
+    <input type="text" id="itemSearch" placeholder="Search item..." oninput="filterItems()">
+    <select id="itemType" onchange="filterItems()">
+      <option value="">All Types</option>
+      <option>Boots</option><option>Physical</option><option>Magic</option>
+      <option>Defense</option><option>Adaptive</option>
+    </select>
+  </div>
+  <div class="count-badge" id="itemCountLabel"></div>
+  <div class="items-grid" id="itemGrid"></div>
+  <div class="item-detail" id="itemDetail"></div>
+</div>
+
+<!-- ══ DRAFT HELPER ══ -->
+<div id="tab-draft" class="tab-content">
+  <div class="search-row">
+    <input type="text" id="draftSearch" placeholder="Add enemy hero..." oninput="filterDraftHeroes()">
+    <button class="btn danger" onclick="clearEnemies()">Clear</button>
+  </div>
+  <div id="enemyChips" style="margin-bottom:16px;min-height:32px;"></div>
+  <div class="hero-grid" id="draftGrid" style="max-height:260px;overflow-y:auto;"></div>
+  <div class="draft-area" style="margin-top:20px;">
+    <div class="draft-panel">
+      <h3>Enemy Lineup</h3>
+      <div id="enemyList"><span style="color:var(--muted);font-size:.85rem;">Add enemies above ↑</span></div>
+    </div>
+    <div class="draft-panel">
+      <h3>Suggested Picks</h3>
+      <div id="suggestions"><span style="color:var(--muted);font-size:.85rem;">Suggestions appear here</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TIER LIST ══ -->
+<div id="tab-tier" class="tab-content">
+  <div style="margin-bottom:18px;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:.75rem;color:var(--muted);margin-bottom:6px;">
+      Martis=#1 ban · Helcurt near-perma ban · Gloo 55-70%+ ban rate · Patch 2.1.50+
+    </div>
+  </div>
+  <div id="tierList"></div>
+</div>
+
+</main>
+
+<script>
+const IMG_BASE = "https://raw.githubusercontent.com/JUJUx1/mlbb-images/main";
+
+function heroImg(name) {
+  const safe = name.replace(/\//g,'_').replace(/ /g,'_').replace(/'/g,'').replace(/\./g,'');
+  return `${IMG_BASE}/heroes/${safe}.png`;
+}
+function itemImg(name) {
+  const safe = name.replace(/\//g,'_').replace(/ /g,'_').replace(/'/g,'').replace(/\./g,'');
+  return `${IMG_BASE}/items/${safe}.png`;
+}
+function imgFallback(el) { el.style.opacity = '0.3'; }
+
+// ═══════════════════════════════
+// DATA
+// ═══════════════════════════════
+const HEROES = {
+  "Aamon":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Mage","Support"],"countered_by":["Crowd Control","AoE","Chou"],"build":["Hunter Strike","Blade of Despair","Endless Battle","Immortality","Malefic Roar","War Axe"],"tips":"Fragments make him invisible. Deal damage to charge then burst when unseen."},
+  "Benedetta":{"role":"Assassin","lane":"Jungle/EXP","counters":["Fighter","Crowd Control","Physical"],"countered_by":["Burst Magic","CC Spam","Tank"],"build":["Hunter Strike","Blade of Despair","Endless Battle","Immortality","Malefic Roar","War Axe"],"tips":"Charge S1 for dash combo. S2 counters CC — timing is critical."},
+  "Arlott":{"role":"Assassin/Fighter","lane":"Jungle/EXP","counters":["Fighter","Tank","Melee"],"countered_by":["Crowd Control","Long Range","Burst Mage"],"build":["Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar","War Axe"],"tips":"Mark enemies with skills. S2 root into ult for execute combo."},
+  "Fanny":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Mage","Support"],"countered_by":["Crowd Control","Khufra","Slow"],"build":["Endless Battle","Blade of Despair","Immortality","Malefic Roar","Hunter Strike","War Axe"],"tips":"Highest skill ceiling in game. Energy management and cable routing are everything."},
+  "Gusion":{"role":"Assassin","lane":"Jungle","counters":["Mage","Support","Marksman"],"countered_by":["Chou","Kaja","Ruby"],"build":["Calamity Reaper","Clock of Destiny","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"Charge S2 fully, throw daggers, teleport back for burst."},
+  "Hanzo":{"role":"Assassin","lane":"Jungle","counters":["Objectives","Map Control","Late Game"],"countered_by":["Crowd Control","Burst","Mobile"],"build":["Hunter Strike","Blade of Despair","Immortality","Malefic Roar","Endless Battle","War Axe"],"tips":"Ult sends demon soul out. Hide body in bush or behind tank."},
+  "Harley":{"role":"Assassin/Mage","lane":"Jungle/Mid","counters":["Tank","Fighter","CC Immune"],"countered_by":["Burst","Mobile","Assassin"],"build":["Arcane Boots","Calamity Reaper","Holy Crystal","Genius Wand","Divine Glaive","Immortality"],"tips":"S2 hat limits enemy max HP. Combo: S2>S1>Ult>S3."},
+  "Hayabusa":{"role":"Assassin","lane":"Jungle","counters":["Eudora","Pharsa","Vale"],"countered_by":["Kaja","Martis","Chou"],"build":["Hunter Strike","Blade of Despair","Malefic Roar","Immortality","Queen's Wings","War Axe"],"tips":"Place 3 shadows before ulting. Split push with shadow mobility."},
+  "Helcurt":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Mage","Support"],"countered_by":["Saber","Chou","Martis"],"build":["Endless Battle","Blade of Despair","Immortality","Malefic Roar","War Axe","Hunter Strike"],"tips":"Ult silences whole map. Near-perma ban in high rank. Dive backline immediately after."},
+  "Joy":{"role":"Assassin","lane":"Jungle","counters":["Fighter","Tank","Physical"],"countered_by":["Burst Magic","Crowd Control","Silence"],"build":["Calamity Reaper","Blade of Despair","Holy Crystal","Immortality","Divine Glaive","Genius Wand"],"tips":"Ult gives CC immunity and damage reduction. Dance around enemies with S2."},
+  "Karina":{"role":"Assassin","lane":"Jungle","counters":["Low HP Heroes","Marksman","Support"],"countered_by":["Crowd Control","Chou","Tank"],"build":["Calamity Reaper","Blade of Despair","Immortality","Hunter Strike","Malefic Roar","War Axe"],"tips":"Ult resets on kill/assist. Clean up teamfights from behind."},
+  "Lancelot":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Mage","Support"],"countered_by":["Kaja","Chou","Crowd Control"],"build":["Hunter Strike","Blade of Despair","Endless Battle","Immortality","Malefic Roar","War Axe"],"tips":"S2 dashes have invincible frames. Combo: S2>S1x3>Ult."},
+  "Ling":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Mage","Support"],"countered_by":["Aurora","Eudora","Kaja"],"build":["Hunter Strike","Blade of Despair","Malefic Roar","Immortality","Endless Battle","War Axe"],"tips":"Wall-hop to escape ganks. Ult freezes enemies in AoE."},
+  "Natalia":{"role":"Assassin","lane":"Jungle","counters":["Support","Marksman","Isolated"],"countered_by":["AoE","Chou","Crowd Control"],"build":["Hunter Strike","Blade of Despair","Immortality","Endless Battle","Malefic Roar","War Axe"],"tips":"Go invisible in bushes. Silence passive before comboing."},
+  "Nolan":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Support","Grouped"],"countered_by":["Crowd Control","Tank","Burst"],"build":["Hunter Strike","Blade of Despair","Malefic Roar","Immortality","Endless Battle","War Axe"],"tips":"Chain S1 dashes for mobility. Ult for teamfight initiation."},
+  "Saber":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Mage","Isolated"],"countered_by":["Crowd Control","Chou","Ruby"],"build":["Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar","War Axe"],"tips":"Buffed Patch 2.1.50 — halved S1 CD. More durable. Ult one-shots carries."},
+  "Selena":{"role":"Assassin","lane":"Jungle/Roam","counters":["Mage","Marksman","Support"],"countered_by":["Mobile","Crowd Control","Purify"],"build":["Calamity Reaper","Clock of Destiny","Holy Crystal","Genius Wand","Immortality","Divine Glaive"],"tips":"Set traps before switching to assassin form. Trap>Stun>Burst."},
+  "Suyou":{"role":"Assassin","lane":"Jungle","counters":["Marksman","Fighter","Physical"],"countered_by":["Crowd Control","Burst","Tank"],"build":["Hunter Strike","Blade of Despair","Endless Battle","Immortality","Malefic Roar","War Axe"],"tips":"Ink stance for AoE, Sword stance for single-target. Mix both for max damage."},
+  "Yi Sun-Shin":{"role":"Assassin/Marksman","lane":"Jungle/Gold","counters":["Marksman","Support","Poke"],"countered_by":["Assassin","Crowd Control","Close Range"],"build":["Windtalker","Berserker's Fury","Blade of Despair","Malefic Roar","Immortality","Hunter Strike"],"tips":"Ult reveals all enemies globally — great for vision and cross-map snipe."},
+  "Aldous":{"role":"Fighter","lane":"EXP","counters":["Marksman","Support","Late Game"],"countered_by":["Mobile","Crowd Control","Early Game"],"build":["Warrior Boots","Blade of Despair","Immortality","Endless Battle","Malefic Roar","Hunter Strike"],"tips":"Farm S1 stacks early. Ult hunts any enemy globally when stacked."},
+  "Alpha":{"role":"Fighter","lane":"EXP","counters":["Fighter","Tank","Physical"],"countered_by":["Crowd Control","Magic","Long Range"],"build":["Warrior Boots","War Axe","Endless Battle","Blade of Despair","Hunter Strike","Immortality"],"tips":"S2 dash marks enemies. Detonate marks with S1 for massive burst."},
+  "Argus":{"role":"Fighter","lane":"EXP","counters":["Physical","Sustained Fight","Fighter"],"countered_by":["Crowd Control","Magic","True Damage"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Malefic Roar","Immortality","Hunter Strike"],"tips":"Ult makes you immortal temporarily. Engage when low HP, ult to survive and heal."},
+  "Aulus":{"role":"Fighter","lane":"EXP","counters":["Fighter","Tank","Physical"],"countered_by":["Crowd Control","Long Range","Magic"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Malefic Roar","Immortality","Hunter Strike"],"tips":"Axe empowerment multiplies damage. Stack S passive before fighting."},
+  "Badang":{"role":"Fighter","lane":"EXP","counters":["Melee","Grouped","Tank"],"countered_by":["Mobile","Marksman","Mage"],"build":["Warrior Boots","Endless Battle","Hunter Strike","Blade of Despair","Immortality","Malefic Roar"],"tips":"Wall+Ult combo: push enemy into wall then ult for massive burst."},
+  "Balmond":{"role":"Fighter","lane":"EXP","counters":["Fighter","Tank","Low HP"],"countered_by":["Crowd Control","Long Range","Burst Mage"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"Ult executes low HP enemies. Farm minions/jungle for HP regen passive."},
+  "Bane":{"role":"Fighter","lane":"EXP","counters":["Physical Tank","Fighter","Grouped"],"countered_by":["Mobile","Long Range","Burst Mage"],"build":["Warrior Boots","Endless Battle","Malefic Roar","Blade of Despair","Immortality","Calamity Reaper"],"tips":"Ult summons ship cannon for AoE. S2 empowers basic attacks with poison."},
+  "Barats":{"role":"Fighter/Tank","lane":"EXP","counters":["Melee","Fighter","Tank"],"countered_by":["Magic","Crowd Control","Long Range"],"build":["Warrior Boots","Cursed Helmet","Antique Cuirass","Immortality","Oracle","Blade of Despair"],"tips":"Stack Detona to grow larger. Ult swallows one enemy — remove carries from fight."},
+  "Chou":{"role":"Fighter","lane":"Jungle/EXP","counters":["Marksman","Mage","Assassin"],"countered_by":["Ruby","Khufra","CC Spam"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Immortality","Queen's Wings","Malefic Roar"],"tips":"Combo: S1x3>S2>Ult. Kick carries into your team."},
+  "Dyrroth":{"role":"Fighter","lane":"EXP","counters":["Tank","Fighter","Physical Defense"],"countered_by":["Magic","Crowd Control","Burst"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Malefic Roar","Immortality","Hunter Strike"],"tips":"S2 reduces enemy defense. Combo into S1 for execute passive."},
+  "Esmeralda":{"role":"Fighter/Tank","lane":"EXP","counters":["Shield Users","Fighter","Tank"],"countered_by":["True Damage","Crowd Control","Burst"],"build":["Oracle","Necklace of Durance","Antique Cuirass","Immortality","Fleeting Time","Holy Crystal"],"tips":"Converts enemy shields to her own HP. Stomps shield-heavy teams."},
+  "Fredrinn":{"role":"Fighter/Tank","lane":"Jungle/EXP","counters":["Physical","Fighter","Tank"],"countered_by":["Magic","Long Range","Crowd Control"],"build":["Warrior Boots","Cursed Helmet","Antique Cuirass","Immortality","Oracle","Blade of Despair"],"tips":"S+ meta jungle pick. Absorbs damage into crystals, releases as ult damage."},
+  "Freya":{"role":"Fighter","lane":"EXP","counters":["Fighter","Tank","Melee"],"countered_by":["Long Range","Crowd Control","Burst"],"build":["Warrior Boots","Haas's Claws","Blade of Despair","Endless Battle","Immortality","Malefic Roar"],"tips":"Recently reworked — one of the best 1v1 fighters now."},
+  "Gloo":{"role":"Fighter/Tank","lane":"EXP/Roam","counters":["Physical","Fighter","Melee"],"countered_by":["Magic","Long Range","Burst"],"build":["Warrior Boots","Cursed Helmet","Antique Cuirass","Immortality","Oracle","Thunder Belt"],"tips":"55-70%+ ban rate in high rank. Ult attaches to enemy — always use on the carry."},
+  "Guinevere":{"role":"Fighter/Mage","lane":"EXP","counters":["Melee","Fighter","Tank"],"countered_by":["Long Range","Crowd Control","Marksman"],"build":["Warrior Boots","Calamity Reaper","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"S2 launches enemies airborne. Ult does massive damage to suspended targets."},
+  "Hilda":{"role":"Fighter/Tank","lane":"EXP/Roam","counters":["Assassin","Fighter","Early Game"],"countered_by":["Long Range","Magic","Late Game"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Antique Cuirass"],"tips":"Regen in bush stacks. Strong early — pressure before enemy scales."},
+  "Jawhead":{"role":"Fighter/Tank","lane":"EXP/Roam","counters":["Marksman","Support","Isolated"],"countered_by":["Crowd Control","Mobile","Long Range"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Immortality","Hunter Strike","Malefic Roar"],"tips":"Ult throws ally or enemy. Throw Franco into enemy, or carry to safety."},
+  "Julian":{"role":"Fighter","lane":"EXP","counters":["Fighter","Assassin","Crowd Control"],"countered_by":["Long Range","Burst Mage","CC Spam"],"build":["Calamity Reaper","Holy Crystal","Blade of Despair","Immortality","Divine Glaive","Genius Wand"],"tips":"Combine S1+S2+S3 for enhanced effects. Mix combo orders based on situation."},
+  "Khaleed":{"role":"Fighter","lane":"EXP","counters":["Fighter","Melee","Physical"],"countered_by":["Crowd Control","Long Range","Burst Mage"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"Skills regen HP passively. Ult surf cancels damage — use to disengage."},
+  "Lapu-Lapu":{"role":"Fighter","lane":"EXP","counters":["Fighter","Tank","Physical"],"countered_by":["Burst Mage","Crowd Control","Long Range"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"S3 switches single/dual blade modes. Dual blade mode for burst."},
+  "Leomord":{"role":"Fighter","lane":"EXP/Jungle","counters":["Fighter","Marksman","Physical"],"countered_by":["Crowd Control","Burst Mage","Long Range"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Malefic Roar","Immortality","Hunter Strike"],"tips":"5th highest ban rate March 2026. Mounted form massively boosts damage and speed."},
+  "Lukas":{"role":"Fighter","lane":"EXP","counters":["Fighter","Tank","Physical"],"countered_by":["Crowd Control","Magic","Long Range"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"Chain skills for max damage output. Strong burst + sustain combo fighter."},
+  "Martis":{"role":"Fighter","lane":"EXP","counters":["Crowd Control","Fighter","Assassin"],"countered_by":["Long Range","Marksman","Poke"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"#1 MOST BANNED hero March 2026. S1 gives CC immunity. Counter to Franco hook, Atlas ult."},
+  "Masha":{"role":"Fighter","lane":"EXP/Jungle","counters":["Tank","Physical Defense","Objectives"],"countered_by":["Burst","Magic","Crowd Control"],"build":["Warrior Boots","Endless Battle","Malefic Roar","Blade of Despair","Immortality","Hunter Strike"],"tips":"3 HP bars = extremely tanky. Great for split push and Lord/turtle steal."},
+  "Minsitthar":{"role":"Fighter","lane":"EXP","counters":["Mobile","Dash Users","Assassin"],"countered_by":["Long Range","Crowd Control","Magic"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Antique Cuirass"],"tips":"Ult creates spear zone that suppresses all dashes inside. Counter to Fanny, Ling."},
+  "Paquito":{"role":"Fighter","lane":"EXP","counters":["Assassin","Marksman","Fighter"],"countered_by":["Crowd Control","Esmeralda","Ruby"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"Stack passive to 4 before engaging. 4-stack S1 = huge damage."},
+  "Phoveus":{"role":"Fighter","lane":"EXP","counters":["Mobile","Dash Users","Assassin"],"countered_by":["No-Dash Heroes","Long Range","Crowd Control"],"build":["Warrior Boots","Cursed Helmet","Antique Cuirass","Blade of Despair","Immortality","Oracle"],"tips":"Priority counter-pick March 2026. Hard counter to Ling, Gusion, Lancelot, Benedetta."},
+  "Roger":{"role":"Fighter/Marksman","lane":"Jungle/EXP","counters":["Marksman","Fighter","Isolated"],"countered_by":["Crowd Control","Burst Mage","AoE"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Malefic Roar","Immortality","Windtalker"],"tips":"Human form slows, wolf form engages. Transform combo for max damage."},
+  "Ruby":{"role":"Fighter","lane":"EXP","counters":["Physical","Diver","Assassin"],"countered_by":["Burst Mage","Marksman","Helcurt"],"build":["Warrior Boots","Cursed Helmet","Oracle","Antique Cuirass","Immortality","Queen's Wings"],"tips":"All skills grant lifesteal. Stay in fights as long as possible."},
+  "Silvanna":{"role":"Fighter","lane":"EXP","counters":["Melee","Fighter","Tank"],"countered_by":["Long Range","Mobile","Crowd Control"],"build":["Warrior Boots","Calamity Reaper","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"S2 traps enemy in circle. Combo into ult for lockdown burst."},
+  "Sora":{"role":"Fighter/Assassin","lane":"EXP/Jungle","counters":["Fighter","Marksman","Physical"],"countered_by":["Crowd Control","Magic","Tank"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Malefic Roar","Immortality","Hunter Strike"],"tips":"S-tier March 2026 meta. Very mobile fighter. Combine skills for massive burst."},
+  "Sun":{"role":"Fighter","lane":"EXP","counters":["Single Target CC","Fighter","Tank"],"countered_by":["AoE","Burst","Crowd Control"],"build":["Warrior Boots","Endless Battle","Hunter Strike","Blade of Despair","Immortality","Malefic Roar"],"tips":"Clones confuse enemies. Target swaps to clone when hit — bait skills."},
+  "Terizla":{"role":"Fighter","lane":"EXP","counters":["Mobile","Grouped","Fighter"],"countered_by":["Long Range","Crowd Control","Magic"],"build":["Warrior Boots","Cursed Helmet","Endless Battle","Blade of Despair","Immortality","Malefic Roar"],"tips":"Ult pulls enemies to center. Combo with teammates for easy kills."},
+  "Thamuz":{"role":"Fighter","lane":"EXP","counters":["Physical Tank","Healer","Fighter"],"countered_by":["Mobile","Long Range","Crowd Control"],"build":["Warrior Boots","Endless Battle","Malefic Roar","Blade of Despair","Immortality","Hunter Strike"],"tips":"S2 ignites ground. Stay on burning areas for lifesteal and damage boost."},
+  "X.Borg":{"role":"Fighter","lane":"EXP","counters":["Grouped","Physical Tank","Healer"],"countered_by":["Mobile","Long Range","Crowd Control"],"build":["Warrior Boots","Haas's Claws","Malefic Roar","Blade of Despair","Immortality","Hunter Strike"],"tips":"S2 removes fire stacks for true damage burst. Reattach armor after bursting."},
+  "Yin":{"role":"Fighter","lane":"EXP/Jungle","counters":["Isolated Target","Fighter","Assassin"],"countered_by":["Crowd Control","AoE","Long Range"],"build":["Warrior Boots","Endless Battle","Blade of Despair","Hunter Strike","Immortality","Malefic Roar"],"tips":"Ult takes one enemy into a 1v1 realm — always ult the carry."},
+  "Yu Zhong":{"role":"Fighter","lane":"EXP","counters":["Chou","Assassin","Single Target"],"countered_by":["Crowd Control","Esmeralda","Lunox"],"build":["Cursed Helmet","Antique Cuirass","Immortality","Blade of Despair","Queen's Wings","Oracle"],"tips":"S2 gives large shield. Dragon form for AoE sustain and mobility."},
+  "Zilong":{"role":"Fighter","lane":"EXP/Jungle","counters":["Marksman","Support","Isolated"],"countered_by":["Crowd Control","Tank","AoE"],"build":["Warrior Boots","Hunter Strike","Blade of Despair","Malefic Roar","Immortality","Endless Battle"],"tips":"Ult removes CC and boosts speed. Great for chasing carries."},
+  "Akai":{"role":"Tank","lane":"Roam","counters":["Fighter","Tank","Grouped"],"countered_by":["Long Range","Burst","Crowd Control"],"build":["Tough Boots","Cursed Helmet","Antique Cuirass","Oracle","Immortality","Dominance Ice"],"tips":"Ult spins and pushes enemies. Pin enemies against walls for teammates."},
+  "Atlas":{"role":"Tank","lane":"Roam","counters":["Grouped","Assassin","Marksman"],"countered_by":["Mobile","Spread Comps","Purify"],"build":["Tough Boots","Dominance Ice","Cursed Helmet","Immortality","Antique Cuirass","Oracle"],"tips":"Flash > Ult guarantees catch. Always combo with AoE teammates."},
+  "Baxia":{"role":"Tank","lane":"Roam","counters":["Healer","Lifesteal","Regen"],"countered_by":["Burst","Mobile","Magic"],"build":["Tough Boots","Cursed Helmet","Oracle","Antique Cuirass","Immortality","Dominance Ice"],"tips":"Passive reduces all HP regen by 50%. Counter to Estes, Ruby, Alucard."},
+  "Belerick":{"role":"Tank","lane":"Roam","counters":["Physical","Fighter","Assassin"],"countered_by":["Magic","Burst","Long Range"],"build":["Tough Boots","Cursed Helmet","Oracle","Immortality","Antique Cuirass","Dominance Ice"],"tips":"Taunts nearby enemies. Pair with Esmeralda or DoT mage for passive damage."},
+  "Carmilla":{"role":"Tank/Support","lane":"Roam","counters":["Physical","Fighter","Grouped"],"countered_by":["Spread Comps","Magic","Burst"],"build":["Tough Boots","Cursed Helmet","Oracle","Antique Cuirass","Immortality","Dominance Ice"],"tips":"Ult links enemies — CC and damage is shared between all linked targets."},
+  "Chip":{"role":"Tank","lane":"Roam","counters":["Marksman","Support","Grouped"],"countered_by":["Mobile","Long Range","Crowd Control"],"build":["Tough Boots","Dominance Ice","Cursed Helmet","Oracle","Antique Cuirass","Immortality"],"tips":"S2 creates portal for allies. Ult sucks and stuns grouped enemies."},
+  "Edith":{"role":"Tank/Marksman","lane":"Roam/EXP","counters":["Physical","Fighter","Grouped"],"countered_by":["Magic","True Damage","Crowd Control"],"build":["Tough Boots","Cursed Helmet","Oracle","Antique Cuirass","Immortality","Blade of Despair"],"tips":"Tank form to build, then use marksman mode for damage."},
+  "Franco":{"role":"Tank","lane":"Roam","counters":["Isolated","Carries","Support"],"countered_by":["Mobile","Purify","CC Immune"],"build":["Tough Boots","Cursed Helmet","Immortality","Dominance Ice","Antique Cuirass","Oracle"],"tips":"Always hook the carry. S3 suppresses — combo with high-damage ally."},
+  "Gatotkaca":{"role":"Tank","lane":"EXP/Roam","counters":["Physical","Fighter","Grouped"],"countered_by":["Magic","Burst","Crowd Control"],"build":["Tough Boots","Cursed Helmet","Oracle","Antique Cuirass","Immortality","Dominance Ice"],"tips":"HP lost converts to magic attack. Ult has global range — aim carefully on minimap."},
+  "Grock":{"role":"Tank","lane":"Roam","counters":["Siege","Poke","Fighter"],"countered_by":["Mobile","Esmeralda","Magic"],"build":["Warrior Boots","Antique Cuirass","Cursed Helmet","Immortality","Oracle","Thunder Belt"],"tips":"Wall zones enemies. Power of Nature passive near walls = huge bonus damage."},
+  "Hylos":{"role":"Tank","lane":"Roam","counters":["Physical","Fighter","Sustained"],"countered_by":["Burst","Magic","True Damage"],"build":["Tough Boots","Cursed Helmet","Oracle","Immortality","Antique Cuirass","Dominance Ice"],"tips":"Mana converts to HP. Ult slows everything inside the ring."},
+  "Johnson":{"role":"Tank","lane":"Roam","counters":["Grouped","Gank","Jungle"],"countered_by":["Mobile","Crowd Control","Burst"],"build":["Warrior Boots","Cursed Helmet","Antique Cuirass","Immortality","Oracle","Dominance Ice"],"tips":"Ult is a car — carry a mage passenger. Johnson+Odette/Aurora = lethal combo."},
+  "Khufra":{"role":"Tank","lane":"Roam","counters":["Mobile","Dash Users","Assassin"],"countered_by":["Slow Comps","CC Spam","Mages"],"build":["Tough Boots","Cursed Helmet","Antique Cuirass","Immortality","Dominance Ice","Oracle"],"tips":"S+ counter-pick. S2 blocks all dashes. Counter to Ling, Gusion, Lancelot, Benedetta."},
+  "Lolita":{"role":"Tank","lane":"Roam","counters":["Marksman","Projectile Skills","Ranged"],"countered_by":["Non-Projectile","Melee","Crowd Control"],"build":["Tough Boots","Cursed Helmet","Antique Cuirass","Immortality","Oracle","Dominance Ice"],"tips":"Shield blocks all projectiles. Counter to Moskov, Bruno, Claude, Beatrix."},
+  "Marcel":{"role":"Tank","lane":"Roam","counters":["Grouped","Fighter","Assassin"],"countered_by":["Long Range","Magic","Burst"],"build":["Tough Boots","Cursed Helmet","Antique Cuirass","Oracle","Immortality","Dominance Ice"],"tips":"Newest hero. Uses rally mechanics to boost nearby allies. Great team utility tank."},
+  "Minotaur":{"role":"Tank","lane":"Roam","counters":["Physical","Fighter","Assassin"],"countered_by":["Magic","Poke","Crowd Control"],"build":["Tough Boots","Oracle","Cursed Helmet","Immortality","Dominance Ice","Antique Cuirass"],"tips":"Rage heals allies in ult. Stay in fights to build rage meter."},
+  "Tigreal":{"role":"Tank","lane":"Roam","counters":["Grouped","Fighter","Assassin"],"countered_by":["Mobile","Crowd Control","Purify"],"build":["Tough Boots","Dominance Ice","Cursed Helmet","Immortality","Antique Cuirass","Oracle"],"tips":"S+ dominant engage tank. Flicker > Ult displaces entire teams."},
+  "Uranus":{"role":"Tank","lane":"EXP","counters":["Physical","Poke","Fighter"],"countered_by":["Burst","True Damage","Crowd Control"],"build":["Warrior Boots","Cursed Helmet","Oracle","Antique Cuirass","Immortality","Dominance Ice"],"tips":"Regen stacks over time — the longer fights last, the tankier he gets."},
+  "Alice":{"role":"Mage/Tank","lane":"Mid","counters":["Grouped","Physical","Sustained"],"countered_by":["Burst","Mobile","True Damage"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Genius Wand","Immortality","Divine Glaive"],"tips":"Absorb orbs to boost HP and damage. Ult drains nearby enemies HP."},
+  "Aurora":{"role":"Mage","lane":"Mid","counters":["Melee","Fighter","Low Mobility"],"countered_by":["Mobile","Purify","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"Charge S passive for free freeze. S1 Permafrost combo for guaranteed CC."},
+  "Cecilion":{"role":"Mage","lane":"Mid","counters":["Poke","Late Game","Grouped"],"countered_by":["Assassin","Early Aggression","Mobile"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"S1 stacks increase max mana and damage. Don't feed early."},
+  "Chang'e":{"role":"Mage","lane":"Mid","counters":["Grouped","Physical","Poke"],"countered_by":["Assassin","Mobile","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Ult provides CC immunity and huge AoE. Moonrabbit buffs damage."},
+  "Cyclops":{"role":"Mage","lane":"Mid","counters":["Fighter","Tank","Physical"],"countered_by":["Assassin","Mobile","Burst"],"build":["Arcane Boots","Clock of Destiny","Lightning Truncheon","Holy Crystal","Genius Wand","Immortality"],"tips":"Kills reduce CD. Snowballs when ahead. Focus carries for resets."},
+  "Eudora":{"role":"Mage","lane":"Mid","counters":["Squishy","Grouped","No Mobility"],"countered_by":["Mobile","Tanks","Shield Users"],"build":["Arcane Boots","Lightning Truncheon","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"Reworked kit — Superconductor charges on S1. Stack before full combo."},
+  "Faramis":{"role":"Support/Mage","lane":"Roam","counters":["Teamfight","Grouped","Death"],"countered_by":["Burst","Poke","Mobile"],"build":["Arcane Boots","Fleeting Time","Oracle","Holy Crystal","Immortality","Cursed Helmet"],"tips":"Ult revives dead allies as shadow fighters. Black hole pulls enemies."},
+  "Gord":{"role":"Mage","lane":"Mid","counters":["Grouped","Poke","Tank"],"countered_by":["Assassin","Mobile","Crowd Control"],"build":["Arcane Boots","Clock of Destiny","Lightning Truncheon","Holy Crystal","Divine Glaive","Genius Wand"],"tips":"Ult channels long beam. Position safely and beam enemies at choke points."},
+  "Harith":{"role":"Mage","lane":"Mid","counters":["Fighter","Physical","Melee"],"countered_by":["Burst","Crowd Control","Silence"],"build":["Arcane Boots","Clock of Destiny","Calamity Reaper","Holy Crystal","Genius Wand","Immortality"],"tips":"S2 gives shield and mobility. Very slippery — hard to kill when played well."},
+  "Kadita":{"role":"Mage","lane":"Mid","counters":["Physical","Fighter","Grouped"],"countered_by":["Burst","Mobile","Crowd Control"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"S2 gives CC immunity and heals. Absorb burst then retaliate."},
+  "Kagura":{"role":"Mage","lane":"Mid","counters":["Fighter","Assassin","Crowd Control"],"countered_by":["Burst","Mobile","Silence"],"build":["Arcane Boots","Clock of Destiny","Lightning Truncheon","Holy Crystal","Genius Wand","Immortality"],"tips":"Nerfed Patch 2.1.50 — ult damage dropped. Teleport to umbrella for repositioning."},
+  "Lunox":{"role":"Mage","lane":"Mid","counters":["Fighter","Crowd Control","Assassin"],"countered_by":["Burst Assassin","Marksman","Long Range"],"build":["Arcane Boots","Holy Crystal","Divine Glaive","Necklace of Durance","Immortality","Genius Wand"],"tips":"Chaos ult gives CC immunity. Order ult for burst. Alternate both."},
+  "Luo Yi":{"role":"Mage","lane":"Mid","counters":["Grouped","Melee","Fighter"],"countered_by":["Mobile","Assassin","Purify"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Link enemies with same color marks. Ult teleports your team anywhere on map."},
+  "Lylia":{"role":"Mage","lane":"Mid","counters":["Grouped","Poke","Sustained"],"countered_by":["Mobile","Assassin","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Ult returns you to previous position. Safe re-engage or escape tool."},
+  "Mathilda":{"role":"Support/Mage","lane":"Roam","counters":["Assassin","Physical","Mobile"],"countered_by":["Crowd Control","Burst","Silence"],"build":["Arcane Boots","Fleeting Time","Oracle","Holy Crystal","Immortality","Necklace of Durance"],"tips":"Ult attaches to ally and shields. Great for diving or escaping with carry."},
+  "Nana":{"role":"Mage/Support","lane":"Roam/Mid","counters":["Fighter","Assassin","Mobile"],"countered_by":["Long Range","Burst","Silence"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Oracle","Immortality","Necklace of Durance"],"tips":"S2 transforms enemy into cat (disabled). Passive revives once."},
+  "Novaria":{"role":"Mage","lane":"Mid","counters":["Grouped","Long Range","Objective"],"countered_by":["Assassin","Mobile","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Orb follows terrain shape. Bounce shots around corners for surprise damage."},
+  "Obsidia":{"role":"Marksman","lane":"Gold","counters":["Tank","Physical","Late Game"],"countered_by":["Assassin","Burst","Early Game"],"build":["Swift Boots","Windtalker","Demon Hunter Sword","Berserker's Fury","Malefic Roar","Blade of Despair"],"tips":"Farm Bone Energy to max out then stomp tanks. Lacks mobility — stay near frontline."},
+  "Odette":{"role":"Mage","lane":"Mid","counters":["Grouped","Melee","Sustained"],"countered_by":["Mobile","Crowd Control","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"Ult deals huge AoE. Pair with Tigreal, Johnson, Atlas for guaranteed engage."},
+  "Pharsa":{"role":"Mage","lane":"Mid","counters":["Grouped","Objective","Poke"],"countered_by":["Mobile Assassin","Crowd Control","Gank"],"build":["Arcane Boots","Clock of Destiny","Lightning Truncheon","Holy Crystal","Genius Wand","Divine Glaive"],"tips":"First rotation pick March 2026. Bird form for mobility. Ult has massive range."},
+  "Vale":{"role":"Mage","lane":"Mid","counters":["Grouped","Melee","Support"],"countered_by":["Mobile","Marksman","Burst Assassin"],"build":["Arcane Boots","Clock of Destiny","Lightning Truncheon","Holy Crystal","Genius Wand","Immortality"],"tips":"Upgrade skills situationally. S2 knockup into S1 slow is core combo."},
+  "Valentina":{"role":"Mage","lane":"Mid","counters":["High Ult Heroes","Fighter","Crowd Control"],"countered_by":["Mobile","Assassin","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Ult copies enemy ult. Best against Aldous, Gatotkaca, Estes, Kaja."},
+  "Valir":{"role":"Mage","lane":"Mid","counters":["Grouped","Melee","Physical"],"countered_by":["Mobile","Long Range","Assassin"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"S2 purifies CC on self. Great against heavy CC comps."},
+  "Vexana":{"role":"Mage","lane":"Mid","counters":["Tank","Physical","Grouped"],"countered_by":["Mobile","Assassin","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Ult turns killed enemy into puppet that fights for you."},
+  "Xavier":{"role":"Mage","lane":"Mid","counters":["Grouped","Objective","Long Range"],"countered_by":["Mobile","Assassin","Early Gank"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Immortality","Genius Wand"],"tips":"S3 fires global ult. Use for snipe and objectives across entire map."},
+  "Yve":{"role":"Mage","lane":"Mid","counters":["Grouped","Objective","Poke"],"countered_by":["Assassin","Mobile","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Ult is controllable AOE. Zone enemies off objectives with it."},
+  "Zetian":{"role":"Mage","lane":"Mid","counters":["Grouped","Fighter","Tank"],"countered_by":["Assassin","Mobile","Burst"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Skills apply stacks for amplified follow-up damage. Strong sustained mage."},
+  "Zhask":{"role":"Mage","lane":"Mid","counters":["Grouped","Poke","Siege"],"countered_by":["Assassin","Mobile","Crowd Control"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"Deploy Nightmaric Spawn for turret pressure. Ult merges with spawn for buffed attack mode."},
+  "Zhuxin":{"role":"Mage","lane":"Mid","counters":["Grouped","Fighter","Physical"],"countered_by":["Assassin","Burst","Mobile"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Genius Wand","Immortality"],"tips":"First rotation mid pick March 2026. Transformed form has massive burst + execute."},
+  "Beatrix":{"role":"Marksman","lane":"Gold","counters":["Squishy","Long Range","Poke"],"countered_by":["Dash","Assassin","Short Range"],"build":["Swift Boots","Haas's Claws","Blade of Despair","Malefic Roar","Immortality","Berserker's Fury"],"tips":"Renner=snipe, Wesker=chase, Nibiru=poke, Bennett=AoE. Match weapon to situation."},
+  "Brody":{"role":"Marksman","lane":"Gold","counters":["Tank","Poke","Squishy"],"countered_by":["Mobile","Assassin","Short Range"],"build":["Warrior Boots","Blade of Despair","Hunter Strike","Malefic Roar","Immortality","Berserker's Fury"],"tips":"S1 slows and stacks marks. 4 marks = execute damage with ult."},
+  "Bruno":{"role":"Marksman","lane":"Gold","counters":["Tank","Grouped","Physical"],"countered_by":["Assassin","Mobile","Crowd Control"],"build":["Swift Boots","Windtalker","Berserker's Fury","Malefic Roar","Blade of Despair","Immortality"],"tips":"Ball bounces between enemies. S2+Ult for AoE slow combo."},
+  "Claude":{"role":"Marksman","lane":"Gold","counters":["Grouped","Tank","Objective"],"countered_by":["Assassin","Crowd Control","Early Game"],"build":["Swift Boots","Haas's Claws","Endless Battle","Demon Hunter Sword","Immortality","Blade of Despair"],"tips":"Ult gives huge AS boost. Best paired with Diggie to remove CC."},
+  "Clint":{"role":"Marksman","lane":"Gold","counters":["Squishy","Poke","Support"],"countered_by":["Tank","Assassin","Mobile"],"build":["Swift Boots","Berserker's Fury","Windtalker","Malefic Roar","Blade of Despair","Immortality"],"tips":"S1 passive reloads spread shots for burst. Good harass marksman."},
+  "Granger":{"role":"Marksman","lane":"Gold","counters":["Squishy","Burst","Poke"],"countered_by":["Tank","Assassin","Mobile"],"build":["Swift Boots","Berserker's Fury","Great Dragon Spear","Malefic Roar","Immortality","Blade of Despair"],"tips":"Last bullet in each clip deals critical damage. Count your bullets. Ult for long range burst."},
+  "Hanabi":{"role":"Marksman","lane":"Gold","counters":["Grouped","Shield Users","Tank"],"countered_by":["Assassin","Mobile","Early Game"],"build":["Swift Boots","Windtalker","Berserker's Fury","Malefic Roar","Blade of Despair","Immortality"],"tips":"Attacks bounce to nearby enemies. Ult immobilizes all linked targets."},
+  "Irithel":{"role":"Marksman","lane":"Gold","counters":["Tank","Physical","Poke"],"countered_by":["Assassin","Mobile","Crowd Control"],"build":["Swift Boots","Windtalker","Demon Hunter Sword","Berserker's Fury","Malefic Roar","Blade of Despair"],"tips":"Attacks while moving. Stay mobile and kite at all times."},
+  "Ixia":{"role":"Marksman","lane":"Gold","counters":["Tank","Grouped","Poke"],"countered_by":["Assassin","Burst","Mobile"],"build":["Swift Boots","Windtalker","Demon Hunter Sword","Berserker's Fury","Malefic Roar","Blade of Despair"],"tips":"Ult grants range boost and AoE attacks. Great for objectives."},
+  "Karrie":{"role":"Marksman","lane":"Gold","counters":["Tank","Physical Defense","Healer"],"countered_by":["Assassin","Crowd Control","Burst"],"build":["Swift Boots","Windtalker","Berserker's Fury","Demon Hunter Sword","Malefic Roar","Immortality"],"tips":"True damage passive shreds any tank. Best anti-tank MM in game."},
+  "Kimmy":{"role":"Marksman","lane":"Gold/Mid","counters":["Poke","Siege","Long Range"],"countered_by":["Assassin","Crowd Control","Mobile"],"build":["Arcane Boots","Clock of Destiny","Holy Crystal","Divine Glaive","Immortality","Berserker's Fury"],"tips":"Move while shooting. Never stand still. Constant kite and poke."},
+  "Layla":{"role":"Marksman","lane":"Gold","counters":["Late Game","Tank","Poke"],"countered_by":["Assassin","Early Game","Mobile"],"build":["Swift Boots","Windtalker","Berserker's Fury","Malefic Roar","Blade of Despair","Immortality"],"tips":"Longest range MM at full stacks. Stay far back and poke always."},
+  "Lesley":{"role":"Marksman","lane":"Gold","counters":["Squishy","Support","Poke"],"countered_by":["Mobile","Assassin","Short Range"],"build":["Swift Boots","Berserker's Fury","Blade of Despair","Malefic Roar","Immortality","Windtalker"],"tips":"Full charge S1 for high crit damage. Stay far away and poke safely."},
+  "Melissa":{"role":"Marksman","lane":"Gold","counters":["Melee","Assassin","Diver"],"countered_by":["Long Range","Crowd Control","AoE"],"build":["Swift Boots","Windtalker","Berserker's Fury","Malefic Roar","Blade of Despair","Immortality"],"tips":"Ult creates invincible barrier around her. Blocks melee from reaching you."},
+  "Miya":{"role":"Marksman","lane":"Gold","counters":["Tank","Physical","Grouped"],"countered_by":["Assassin","Crowd Control","Burst"],"build":["Swift Boots","Windtalker","Berserker's Fury","Malefic Roar","Blade of Despair","Immortality"],"tips":"S2 gives AS and movement. Ult removes CC and briefly goes invisible."},
+  "Moskov":{"role":"Marksman","lane":"Gold","counters":["Grouped","Tank","Objective"],"countered_by":["Crowd Control","Assassin","Mobile"],"build":["Swift Boots","Windtalker","Berserker's Fury","Demon Hunter Sword","Malefic Roar","Blade of Despair"],"tips":"Attacks penetrate in a line. Position to hit multiple targets simultaneously."},
+  "Natan":{"role":"Marksman","lane":"Gold","counters":["Grouped","Poke","Tank"],"countered_by":["Assassin","Mobile","Early Game"],"build":["Swift Boots","Endless Battle","Demon Hunter Sword","Berserker's Fury","Malefic Roar","Immortality"],"tips":"Clone copies attacks. Ult reverses time flow for brief invulnerability."},
+  "Popol and Kupa":{"role":"Marksman","lane":"Gold","counters":["Poke","Objective","Siege"],"countered_by":["Assassin","Mobile","Crowd Control"],"build":["Swift Boots","Windtalker","Berserker's Fury","Malefic Roar","Blade of Despair","Immortality"],"tips":"Kupa traps and slows. Place traps at bushes and objectives for vision."},
+  "Wanwan":{"role":"Marksman","lane":"Gold","counters":["Crowd Control","Fighter","Tank"],"countered_by":["Burst","Assassin","Early Game"],"build":["Swift Boots","Windtalker","Berserker's Fury","Blade of Despair","Malefic Roar","Immortality"],"tips":"Hit all weak points to activate ult. Ult grants CC immunity and massive AS."},
+  "Angela":{"role":"Support","lane":"Roam","counters":["Dive","Assassin","Fighter"],"countered_by":["Crowd Control","Silence","Purify"],"build":["Tough Boots","Fleeting Time","Clock of Destiny","Oracle","Immortality","Necklace of Durance"],"tips":"Reworked — much longer attach duration but longer CD. Tick damage while attached to carry."},
+  "Diggie":{"role":"Support","lane":"Roam","counters":["CC Heavy","Fighter","Assassin"],"countered_by":["Burst","Magic","Poke"],"build":["Tough Boots","Fleeting Time","Oracle","Immortality","Necklace of Durance","Antique Cuirass"],"tips":"Ult removes ALL CC from allies. Hard counter to Atlas, Franco, Tigreal."},
+  "Estes":{"role":"Support","lane":"Roam","counters":["Sustained Fight","Physical","Poke"],"countered_by":["Burst","Necklace of Durance","Silence"],"build":["Tough Boots","Oracle","Necklace of Durance","Immortality","Fleeting Time","Antique Cuirass"],"tips":"Keep chain heal link active at all times. Ult AOE heals in teamfights."},
+  "Floryn":{"role":"Support","lane":"Roam","counters":["Physical","Sustained","Poke"],"countered_by":["Burst","Assassin","Silence"],"build":["Tough Boots","Oracle","Fleeting Time","Immortality","Necklace of Durance","Antique Cuirass"],"tips":"Gives item buffs to allies pre-game. Ult heals ALL teammates globally."},
+  "Kaja":{"role":"Support","lane":"Roam","counters":["CC Immune","Marksman","Assassin"],"countered_by":["Purify","Mobile","Burst"],"build":["Tough Boots","Dominance Ice","Oracle","Immortality","Fleeting Time","Cursed Helmet"],"tips":"Ult suppresses one target. Always suppress the carry. Cannot be purified."},
+  "Kalea":{"role":"Support","lane":"Roam","counters":["Dive","Assassin","Fighter"],"countered_by":["Long Range","Burst","Crowd Control"],"build":["Tough Boots","Oracle","Fleeting Time","Immortality","Antique Cuirass","Necklace of Durance"],"tips":"New hero — engage support with healing. Instantly meta after release."},
+  "Rafaela":{"role":"Support","lane":"Roam","counters":["Physical","Fighter","Sustained"],"countered_by":["Burst","Assassin","Silence"],"build":["Tough Boots","Oracle","Necklace of Durance","Immortality","Fleeting Time","Antique Cuirass"],"tips":"S2 heals allies near you. Ult stuns enemies in a line."}
+};
+
+const ITEMS = {
+  "Warrior Boots":{"type":"Boots","stat":"+22 Armor +40 Move Speed","use":"Reduces incoming physical damage. Core boots for physical fighters/tanks."},
+  "Tough Boots":{"type":"Boots","stat":"+22 Magic Def +40 Move Speed","use":"Reduces CC duration by 30%. Best boots for tanks and supports."},
+  "Arcane Boots":{"type":"Boots","stat":"+15 Magic Pen +40 Move Speed","use":"Magic penetration. Core for mages."},
+  "Swift Boots":{"type":"Boots","stat":"+15% Attack Speed +40 Move Speed","use":"Attack speed. Core for most marksmen."},
+  "Magic Shoes":{"type":"Boots","stat":"+10% CDR +40 Move Speed","use":"CDR boots. Good for cooldown-heavy heroes."},
+  "Demon Shoes":{"type":"Boots","stat":"+6% Mana Regen +40 Move Speed","use":"Mana sustain. Good for mana-hungry heroes early game."},
+  "Rapid Boots":{"type":"Boots","stat":"+80 Move Speed out-of-combat","use":"Fastest rotation boots. Great for roamers and supports."},
+  "Blade of Despair":{"type":"Physical","stat":"+170 Phys ATK","use":"Highest physical damage item. Core for assassins and fighters."},
+  "Malefic Roar":{"type":"Physical","stat":"+60 Phys ATK +40% Armor Pen","use":"Shreds tanks. Must have vs high armor enemies."},
+  "Endless Battle":{"type":"Physical","stat":"+65 Phys ATK +True damage passive","use":"True damage after skill use. Core for fighters."},
+  "Hunter Strike":{"type":"Physical","stat":"+80 Phys ATK +15% CDR","use":"CDR + movement speed on hit. Core fighter item."},
+  "War Axe":{"type":"Physical","stat":"+55 Phys ATK +550 HP","use":"Stacking physical ATK and move speed on skill use. Great for fighters who stay in combat."},
+  "Haas's Claws":{"type":"Physical","stat":"+70 Phys ATK +20% Lifesteal","use":"Sustain for fighters and marksmen in extended fights."},
+  "Berserker's Fury":{"type":"Physical","stat":"+65 Phys ATK +25% Crit","use":"Critical damage boost. Core crit item for marksmen."},
+  "Windtalker":{"type":"Physical","stat":"+25 Phys ATK +30% Crit +20% AS","use":"Periodic lightning strike. Good wave clear."},
+  "Demon Hunter Sword":{"type":"Physical","stat":"+35 Phys ATK +25% AS","use":"% max HP damage. Still core vs tanks for Claude, Karrie."},
+  "Malefic Gun":{"type":"Physical","stat":"+50 Phys ATK +20% AS +30% Phys Pen","use":"Physical penetration + AS. Versatile pen item for marksmen."},
+  "Sea Halberd":{"type":"Physical","stat":"+70 Phys ATK +20% AS","use":"Reduces enemy HP regen/healing on hit. Physical anti-heal item."},
+  "Blade of the Heptaseas":{"type":"Physical","stat":"+75 Phys ATK +300 HP","use":"Ambush passive — huge burst on first hit after being unseen. Core for Natalia, Helcurt."},
+  "Great Dragon Spear":{"type":"Physical","stat":"+65 Phys ATK +10% CDR +20% Crit","use":"Ult reduces CDR by 30% on kill. Great for assassins who ult frequently."},
+  "Golden Staff":{"type":"Physical","stat":"+65 Phys ATK +30% AS","use":"Converts crit chance to extra hits. Excellent with Karrie, Miya, Moskov."},
+  "Corrosion Scythe":{"type":"Physical","stat":"+50 Phys ATK +25% AS","use":"Slows enemy on basic attack. Good for kiting marksmen."},
+  "Scarlet Phantom":{"type":"Physical","stat":"+30 Phys ATK +20% AS +25% Crit","use":"Crit+AS hybrid. Good on fast-attacking marksmen."},
+  "Wind of Nature":{"type":"Physical","stat":"+30 Phys ATK +25% AS","use":"Active: 2s physical immunity. Counter assassin ults."},
+  "Queen's Wings":{"type":"Physical","stat":"+15 Phys ATK +1000 HP","use":"When HP < 40%, takes 20% less damage. Survivability item."},
+  "Rose Gold Meteor":{"type":"Physical","stat":"+60 Phys ATK +30 Magic Def","use":"Magic damage shield when HP < 30%. Hybrid defense."},
+  "Sky Piercer":{"type":"Adaptive","stat":"+80 Adaptive ATK","use":"Adaptive — grants Physical ATK or Magic Power. Great on hybrid heroes."},
+  "Winter Crown":{"type":"Adaptive","stat":"+60 Adaptive ATK +700 HP","use":"Adaptive stats + active freeze immunity. Flexible for hybrid damage heroes."},
+  "Holy Crystal":{"type":"Magic","stat":"+100 Magic Power","use":"Core mage damage item. Massive magic scaling."},
+  "Divine Glaive":{"type":"Magic","stat":"+65 Magic Power +40% Magic Pen","use":"Shreds magic resistance. Core vs tanks for mages."},
+  "Genius Wand":{"type":"Magic","stat":"+75 Magic Power +5% Magic Pen","use":"Reduces enemy magic defense on hit (stacks). Core for sustained mage damage."},
+  "Calamity Reaper":{"type":"Magic","stat":"+70 Magic Power +10% CDR","use":"True damage after skill. Great for burst mage-assassins."},
+  "Clock of Destiny":{"type":"Magic","stat":"+60 Magic Power +615 HP","use":"Scales over time. Open early for best results. Core for most mages."},
+  "Lightning Truncheon":{"type":"Magic","stat":"+75 Magic Power +300 Mana","use":"AoE lightning after skill. Best with Clock of Destiny."},
+  "Necklace of Durance":{"type":"Magic","stat":"+60 Magic Power +5% CDR","use":"Reduces enemy healing/shield by 50%. Anti-heal core."},
+  "Fleeting Time":{"type":"Magic","stat":"+70 Magic Power +15% CDR","use":"Kill/assist reduces ult CDR by 30%. Support and mage core."},
+  "Concentrated Energy":{"type":"Magic","stat":"+70 Magic Power +700 HP","use":"Spell vamp for mages. Sustain mage core — Harith, Alice, Lylia."},
+  "Enchanted Talisman":{"type":"Magic","stat":"+50 Magic Power +250 HP +20% CDR","use":"HP and mana regen after not taking damage for 5s. Great mana sustain."},
+  "Ice Queen Wand":{"type":"Magic","stat":"+75 Magic Power +10% CDR","use":"Slows enemies hit by skills. Good for mages that need chase/kite tools."},
+  "Glowing Wand":{"type":"Magic","stat":"+75 Magic Power +400 HP","use":"Burns enemy on skill hit (DoT). Good on sustained mages — Alice, Valir, Yve."},
+  "Wishing Lantern":{"type":"Magic","stat":"+80 Magic Power","use":"Strong magic power item late game."},
+  "Blood Wings":{"type":"Magic","stat":"+150 Magic Power","use":"Highest magic power in game. +2 HP per 1 Magic Power. Late game scaling item."},
+  "Starlium Scythe":{"type":"Magic","stat":"+70 Magic Power +10% CDR","use":"Basic attacks deal bonus magic damage after using skills. Fast skill-cycle mages."},
+  "Feather of Heaven":{"type":"Magic","stat":"+65 Magic Power +30% AS","use":"Converts 40% magic power to basic attack damage. Core for Kimmy, Harith."},
+  "Winter Truncheon":{"type":"Magic","stat":"+60 Magic Power +400 HP","use":"Active: Freeze yourself (immune) for 2s. Survive burst combos."},
+  "Immortality":{"type":"Defense","stat":"+800 HP +40 Armor","use":"Revive on death once. Late game defensive staple for all roles."},
+  "Antique Cuirass":{"type":"Defense","stat":"+920 HP +54 Armor","use":"Reduces enemy physical ATK on hit (stacks). Best vs fighters."},
+  "Cursed Helmet":{"type":"Defense","stat":"+1200 HP +50 Magic Def","use":"Burns nearby enemies passively. Core for tanks who stay in enemy face."},
+  "Dominance Ice":{"type":"Defense","stat":"+500 Mana +70 Armor","use":"Reduces enemy HP regen and AS by 30%. Anti-lifesteal essential."},
+  "Oracle":{"type":"Defense","stat":"+850 HP +42 Magic Def","use":"Enhances shields and heals received by 30%. Core for all supports."},
+  "Guardian Helmet":{"type":"Defense","stat":"+1550 HP +100 HP Regen","use":"Regen HP out of combat. Excess damage reduction passive. Tanky HP item."},
+  "Thunder Belt":{"type":"Defense","stat":"+800 HP +40 Armor +30 Mana Regen","use":"After using skill, next basic attack slows and deals true damage. Great for tanks."},
+  "Twilight Armor":{"type":"Defense","stat":"+1200 HP +400 Mana","use":"Caps incoming physical damage to 900 per hit. Hard counter to crit marksmen."},
+  "Radiant Armor":{"type":"Defense","stat":"+950 HP +52 Magic Def","use":"Reduces magic damage the more you receive it. Anti-sustained magic damage."},
+  "Athena's Shield":{"type":"Defense","stat":"+900 HP +62 Magic Def","use":"Magic shield every 30s. Great vs burst mage one-shots."},
+  "Brute Force Plate":{"type":"Defense","stat":"+770 HP +45 Armor","use":"Gains movement+defense stacks when using skills. Great for mobile tanks."},
+  "Blade Armor":{"type":"Defense","stat":"+90 Armor","use":"Reflects 25% physical damage back. Counter marksmen and crit heroes."}
+};
+
+const TIER_LIST = {
+  "S+":{"Assassin":["Helcurt","Lancelot","Ling","Joy","Nolan","Benedetta","Suyou"],"Fighter":["Sora","Fredrinn","Leomord","Martis","Phoveus","Chou","Dyrroth"],"Tank":["Tigreal","Khufra","Atlas","Gloo","Chip","Edith"],"Mage":["Pharsa","Zhuxin","Lunox","Valentina","Xavier"],"Marksman":["Wanwan","Beatrix","Ixia","Brody"],"Support":["Mathilda","Diggie","Kaja","Floryn","Kalea"]},
+  "S":{"Assassin":["Gusion","Hayabusa","Arlott","Aamon","Saber"],"Fighter":["Yu Zhong","Paquito","Guinevere","Julian","Khaleed","Aldous","Yin"],"Tank":["Carmilla","Baxia","Lolita","Grock","Johnson"],"Mage":["Yve","Cecilion","Luo Yi","Harith","Odette","Chang'e"],"Marksman":["Karrie","Melissa","Natan","Granger","Obsidia"],"Support":["Angela","Estes","Faramis"]},
+  "A":{"Assassin":["Karina","Natalia","Selena","Yi Sun-Shin","Harley"],"Fighter":["Esmeralda","Ruby","Badang","Silvanna","Masha","Freya","Lapu-Lapu","Aulus"],"Tank":["Franco","Belerick","Gatotkaca","Akai","Uranus"],"Mage":["Vale","Kagura","Novaria","Kadita","Lylia","Valir","Zetian"],"Marksman":["Moskov","Lesley","Kimmy","Popol and Kupa","Clint","Hanabi"],"Support":["Rafaela","Nana"]},
+  "B":{"Assassin":["Fanny","Hanzo","Alucard"],"Fighter":["X.Borg","Jawhead","Thamuz","Barats","Terizla","Balmond","Alpha","Argus","Bane","Lukas","Minsitthar","Sun","Hilda","Roger","Zilong"],"Tank":["Minotaur","Hylos","Marcel"],"Mage":["Eudora","Aurora","Vexana","Alice","Cyclops","Gord","Zhask"],"Marksman":["Miya","Bruno","Claude","Irithel","Layla"],"Support":[]}
+};
+
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+document.getElementById('heroCount').textContent = Object.keys(HEROES).length;
+document.getElementById('itemCount').textContent = Object.keys(ITEMS).length;
+
+let selectedHero = null;
+let selectedItem = null;
+let enemies = [];
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ═══════════════════════════════
+// HERO BROWSER
+// ═══════════════════════════════
+function buildHeroGrid(containerId, heroes, onClick) {
+  const grid = document.getElementById(containerId);
+  grid.innerHTML = '';
+  heroes.forEach(name => {
+    const h = HEROES[name];
+    const card = document.createElement('div');
+    card.className = 'hero-card';
+    card.innerHTML = `
+      <img src="${heroImg(name)}" alt="${name}" onerror="this.style.opacity='.2'">
+      <div class="hname">${name}</div>
+      <div class="hrole">${h.role.split('/')[0]}</div>`;
+    card.onclick = () => onClick(name, card);
+    grid.appendChild(card);
+  });
+}
+
+function filterHeroes() {
+  const q = document.getElementById('heroSearch').value.toLowerCase();
+  const role = document.getElementById('roleFilter').value;
+  const lane = document.getElementById('laneFilter').value;
+  const filtered = Object.keys(HEROES).filter(n => {
+    const h = HEROES[n];
+    return (!q || n.toLowerCase().includes(q)) &&
+           (!role || h.role.includes(role)) &&
+           (!lane || h.lane.includes(lane));
+  }).sort();
+  document.getElementById('heroCountLabel').textContent = `${filtered.length} heroes`;
+  buildHeroGrid('heroGrid', filtered, showHeroDetail);
+}
+
+function showHeroDetail(name, card) {
+  document.querySelectorAll('#heroGrid .hero-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedHero = name;
+  const h = HEROES[name];
+  const panel = document.getElementById('heroDetail');
+  panel.className = 'detail-panel show';
+  panel.innerHTML = `
+    <div class="detail-header">
+      <img src="${heroImg(name)}" alt="${name}" onerror="this.style.opacity='.2'">
+      <div>
+        <h2>${name}</h2>
+        <div class="meta">
+          <span class="tag role">${h.role}</span>
+          <span class="tag lane">${h.lane}</span>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">Strong Against</div>
+    <div class="tag-list">${h.counters.map(c=>`<span class="tag counter">${c}</span>`).join('')}</div>
+    <div class="section-title">Weak Against</div>
+    <div class="tag-list">${h.countered_by.map(c=>`<span class="tag weak">${c}</span>`).join('')}</div>
+    <div class="section-title">Recommended Build</div>
+    <div class="build-row">${h.build.map(item => {
+      const it = ITEMS[item] || {};
+      return `<div class="item-card">
+        <img src="${itemImg(item)}" alt="${item}" onerror="this.style.opacity='.2'">
+        <div><div class="iname">${item}</div><div class="istat">${it.stat||''}</div></div>
+      </div>`;
+    }).join('')}</div>
+    <div class="section-title">Tip</div>
+    <div class="tip-box">${h.tips}</div>`;
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+filterHeroes();
+
+// ═══════════════════════════════
+// COUNTER LOOKUP (same grid, different detail)
+// ═══════════════════════════════
+function filterCounterHeroes() {
+  const q = document.getElementById('counterSearch').value.toLowerCase();
+  const role = document.getElementById('counterRole').value;
+  const filtered = Object.keys(HEROES).filter(n => {
+    const h = HEROES[n];
+    return (!q || n.toLowerCase().includes(q)) && (!role || h.role.includes(role));
+  }).sort();
+  document.getElementById('counterCountLabel').textContent = `${filtered.length} heroes`;
+  buildHeroGrid('counterGrid', filtered, showCounterDetail);
+}
+
+function showCounterDetail(name, card) {
+  document.querySelectorAll('#counterGrid .hero-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const h = HEROES[name];
+  const panel = document.getElementById('counterDetail');
+  panel.className = 'detail-panel show';
+  panel.innerHTML = `
+    <div class="detail-header">
+      <img src="${heroImg(name)}" alt="${name}" onerror="this.style.opacity='.2'">
+      <div><h2>${name}</h2><div class="meta"><span class="tag role">${h.role}</span><span class="tag lane">${h.lane}</span></div></div>
+    </div>
+    <div class="section-title">✔ Counters (play ${name} against)</div>
+    <div class="tag-list">${h.counters.map(c=>`<span class="tag counter">${c}</span>`).join('')}</div>
+    <div class="section-title">✘ Countered By (avoid ${name} against)</div>
+    <div class="tag-list">${h.countered_by.map(c=>`<span class="tag weak">${c}</span>`).join('')}</div>
+    <div class="section-title">Tip</div>
+    <div class="tip-box">${h.tips}</div>`;
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+filterCounterHeroes();
+
+// ═══════════════════════════════
+// ITEM LOOKUP
+// ═══════════════════════════════
+function filterItems() {
+  const q = document.getElementById('itemSearch').value.toLowerCase();
+  const type = document.getElementById('itemType').value;
+  const filtered = Object.keys(ITEMS).filter(n => {
+    const it = ITEMS[n];
+    return (!q || n.toLowerCase().includes(q)) && (!type || it.type === type);
+  }).sort();
+  document.getElementById('itemCountLabel').textContent = `${filtered.length} items`;
+  const grid = document.getElementById('itemGrid');
+  grid.innerHTML = '';
+  filtered.forEach(name => {
+    const it = ITEMS[name];
+    const card = document.createElement('div');
+    card.className = 'item-full-card';
+    card.innerHTML = `
+      <img src="${itemImg(name)}" alt="${name}" onerror="this.style.opacity='.2'">
+      <div class="info">
+        <div class="iname">${name}</div>
+        <div class="itype">${it.type}</div>
+        <div class="istat">${it.stat}</div>
+      </div>`;
+    card.onclick = () => showItemDetail(name, card);
+    grid.appendChild(card);
+  });
+}
+
+function showItemDetail(name, card) {
+  document.querySelectorAll('.item-full-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const it = ITEMS[name];
+  const users = Object.keys(HEROES).filter(h => HEROES[h].build.includes(name)).sort();
+  const panel = document.getElementById('itemDetail');
+  panel.className = 'item-detail show';
+  panel.innerHTML = `
+    <div class="detail-header">
+      <img src="${itemImg(name)}" alt="${name}" onerror="this.style.opacity='.2'" style="width:64px;height:64px;border-radius:6px;">
+      <div>
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;color:var(--gold);">${name}</h2>
+        <div style="margin-top:4px;"><span class="tag role">${it.type}</span></div>
+        <div style="font-size:.85rem;color:var(--accent);margin-top:6px;">${it.stat}</div>
+      </div>
+    </div>
+    <div class="section-title">Use Case</div>
+    <div class="tip-box">${it.use}</div>
+    ${users.length ? `<div class="section-title">Used by (${users.length} heroes)</div>
+    <div class="tag-list">${users.map(u=>`<span class="tag counter" style="cursor:pointer" onclick="goToHero('${u}')">${u}</span>`).join('')}</div>` : ''}`;
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function goToHero(name) {
+  document.querySelector('nav button').click();
+  setTimeout(() => {
+    document.getElementById('heroSearch').value = name;
+    filterHeroes();
+    setTimeout(() => {
+      const cards = document.querySelectorAll('#heroGrid .hero-card');
+      cards.forEach(c => { if(c.querySelector('.hname').textContent === name) c.click(); });
+    }, 100);
+  }, 50);
+}
+
+filterItems();
+
+// ═══════════════════════════════
+// DRAFT HELPER
+// ═══════════════════════════════
+function filterDraftHeroes() {
+  const q = document.getElementById('draftSearch').value.toLowerCase();
+  const filtered = q ? Object.keys(HEROES).filter(n => n.toLowerCase().includes(q)).sort() : [];
+  const grid = document.getElementById('draftGrid');
+  grid.innerHTML = '';
+  filtered.forEach(name => {
+    const h = HEROES[name];
+    const card = document.createElement('div');
+    card.className = 'hero-card' + (enemies.includes(name) ? ' selected' : '');
+    card.innerHTML = `<img src="${heroImg(name)}" alt="${name}" onerror="this.style.opacity='.2'">
+      <div class="hname">${name}</div><div class="hrole">${h.role.split('/')[0]}</div>`;
+    card.onclick = () => addEnemy(name);
+    grid.appendChild(card);
+  });
+}
+
+function addEnemy(name) {
+  if (!enemies.includes(name)) {
+    enemies.push(name);
+    renderEnemies();
+    computeSuggestions();
+  }
+}
+
+function removeEnemy(name) {
+  enemies = enemies.filter(e => e !== name);
+  renderEnemies();
+  computeSuggestions();
+}
+
+function clearEnemies() {
+  enemies = [];
+  renderEnemies();
+  computeSuggestions();
+}
+
+function renderEnemies() {
+  const chips = document.getElementById('enemyChips');
+  chips.innerHTML = enemies.map(e => `
+    <span class="enemy-chip">
+      <img src="${heroImg(e)}" style="width:20px;height:20px;border-radius:2px;object-fit:cover;" onerror="this.style.display='none'">
+      ${e} <button onclick="removeEnemy('${e}')">✕</button>
+    </span>`).join('');
+  const list = document.getElementById('enemyList');
+  list.innerHTML = enemies.length ? enemies.map(e => {
+    const h = HEROES[e];
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <img src="${heroImg(e)}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;" onerror="this.style.opacity='.2'">
+      <div><div style="font-size:.85rem;font-weight:600;color:var(--red);">${e}</div>
+      <div style="font-size:.7rem;color:var(--muted);">${h.role} · ${h.lane}</div></div>
+    </div>`;
+  }).join('') : '<span style="color:var(--muted);font-size:.85rem;">Add enemies above ↑</span>';
+}
+
+function computeSuggestions() {
+  const scores = {};
+  enemies.forEach(e => {
+    const h = HEROES[e];
+    h.countered_by.forEach(c => { scores[c] = (scores[c]||0) + 1; });
+  });
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const heroMatches = sorted.map(([label, score]) => {
+    const match = Object.keys(HEROES).find(h => h.toLowerCase() === label.toLowerCase() || HEROES[h].counters.some(c => c.toLowerCase() === label.toLowerCase()));
+    return { label, score, hero: match };
+  }).filter(x => x.hero).slice(0, 8);
+
+  const el = document.getElementById('suggestions');
+  el.innerHTML = heroMatches.length ? heroMatches.map(({hero, score}) => {
+    const h = HEROES[hero];
+    const dots = Array(Math.min(score,5)).fill('<div class="score-dot"></div>').join('') +
+                 Array(Math.max(0,5-score)).fill('<div class="score-dot off"></div>').join('');
+    return `<div class="suggest-chip">
+      <img src="${heroImg(hero)}" onerror="this.style.opacity='.2'">
+      <div><div class="sname">${hero}</div><div class="smeta">${h.role} · ${h.lane}</div></div>
+      <div class="score-bar">${dots}</div>
+    </div>`;
+  }).join('') : '<span style="color:var(--muted);font-size:.85rem;">Add enemies to get suggestions</span>';
+}
+
+// ═══════════════════════════════
+// TIER LIST
+// ═══════════════════════════════
+function buildTierList() {
+  const container = document.getElementById('tierList');
+  const tiers = [['S+','sp'],['S','s'],['A','a'],['B','b']];
+  const roles = ['Assassin','Fighter','Tank','Mage','Marksman','Support'];
+  container.innerHTML = tiers.map(([tier, cls]) => {
+    const td = TIER_LIST[tier];
+    const heroes = roles.flatMap(r => (td[r]||[]).map(h => ({name:h, role:r})));
+    return `<div class="tier-row">
+      <div class="tier-label ${cls}">${tier}</div>
+      <div class="tier-heroes">
+        ${heroes.map(({name,role}) => `
+          <div class="tier-chip" onclick="goToHero('${name}')">
+            <img src="${heroImg(name)}" onerror="this.style.opacity='.2'" alt="${name}">
+            ${name}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+buildTierList();
+</script>
+</body>
+</html>
